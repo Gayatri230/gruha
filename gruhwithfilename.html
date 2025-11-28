@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Incentive Tracker Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+    /* Modern Dark Luxury Theme - Improved Version */
+    :root {
+        --bg-main: #2b1e1a;
+        --bg-dark: #1a0f0d;
+        --accent-red: #c41e3a;
+        --accent-red-dark: #9e162e;
+        --gold-light: #d4af78;
+        --gold-dark: #b89a6b;
+        --card-bg: #3d2a25;
+        --sidebar-bg: #2e1512;
+        --text-light: #e8d5c4;
+        --text-muted: #b89a8c;
+    }
+
+    body {
+        background: linear-gradient(135deg, #2b1e1a 0%, #1a0f0d 100%);
+        color: var(--text-light);
+        font-family: 'Cinzel', 'Georgia', serif;
+        min-height: 100vh;
+    }
+
+    h1, h2, h3, h4, h5 {
+        color: var(--gold-light);
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+    }
+
+    /* Sidebar - Elegant & Dramatic */
+    .sidebar {
+        background: linear-gradient(to bottom, var(--sidebar-bg), #1a0e0c);
+        border-right: 3px solid var(--accent-red);
+        padding: 30px 20px;
+        height: 100%;
+        box-shadow: 4px 0 20px rgba(0,0,0,0.7);
+        backdrop-filter: blur(5px);
+    }
+
+    .sidebar a {
+        color: var(--gold-light);
+        text-decoration: none;
+        display: block;
+        padding: 12px 18px;
+        margin: 8px 0;
+        border-radius: 8px;
+        transition: all 0.3s ease;
+        font-weight: 500;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .sidebar a::before {
+        content: '';
+        position: absolute;
+        top: 0; left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(196,30,58,0.2), transparent);
+        transition: 0.7s;
+    }
+
+    .sidebar a:hover {
+        background-color: var(--accent-red);
+        color: #fff;
+        transform: translateX(8px);
+        box-shadow: 0 4px 15px rgba(196, 30, 58, 0.4);
+    }
+
+    .sidebar a:hover::before {
+        left: 100%;
+    }
+
+    /* Cards - Rich & Textured */
+    .card {
+        background: var(--card-bg);
+        border: 1px solid var(--accent-red-dark);
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 8px 25px rgba(0,0,0,0.6);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 35px rgba(196, 30, 58, 0.3);
+    }
+
+    /* Table - Royal Treatment */
+    .table {
+        border-collapse: separate;
+        border-spacing: 0;
+        width: 100%;
+        margin-top: 20px;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 6px 20px rgba(0,0,0,0.5);
+    }
+
+    .table th {
+        background: linear-gradient(to bottom, var(--accent-red), var(--accent-red-dark));
+        color: var(--gold-light);
+        padding: 15px;
+        text-align: center;
+        font-weight: 600;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        font-size: 0.9rem;
+    }
+
+    .table td {
+        background-color: var(--bg-dark);
+        color: var(--text-light);
+        padding: 14px;
+        border-bottom: 1px solid #444;
+        transition: background 0.3s;
+    }
+
+    .table tr:hover td {
+        background-color: #3c1d18;
+    }
+
+    .table tr:last-child td {
+        border-bottom: none;
+    }
+
+    /* File Upload Section - Now Elegant */
+    .file-upload-section {
+        background: linear-gradient(135deg, #f0d6a8, #d4af78);
+        padding: 30px;
+        border-radius: 18px;
+        margin-bottom: 25px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+        border: 2px solid var(--gold-dark);
+        color: #2b1e1a;
+    }
+
+    .file-upload-section label,
+    .file-upload-section h4 {
+        color: #2b1e1a;
+        font-weight: 700;
+    }
+
+    .file-upload-section input[type="file"] {
+        background: rgba(255,255,255,0.9);
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid var(--gold-dark);
+    }
+
+    /* Optional: Add a subtle animated background */
+    body::before {
+        content: '';
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        background: radial-gradient(circle at 20% 80%, rgba(196, 30, 58, 0.15) 0%, transparent 50%),
+                    radial-gradient(circle at 80% 20%, rgba(212, 175, 120, 0.1) 0%, transparent 50%);
+        pointer-events: none;
+        z-index: -1;
+    }
+</style>
+</head>
+
+<body>
+
+<div class="d-flex">
+
+    <div class="sidebar">
+        <h3>Incentive Tracker</h3>
+        <a href="#">Dashboard</a>
+        <a href="#">My Achievements</a>
+        <a href="#">Incentives</a>
+        <a href="#">Team Performance</a>
+        <a href="#">Logout</a>
+    </div>
+
+    <div class="container-fluid p-4">
+
+        <h2 class="mb-4">WELCOME TO GRUHA, USERS</h2>
+
+        <div class="file-upload-section">
+            <h4 class="mb-3">Upload Data File</h4>
+            <label for="excelFile" class="form-label">Select Excel File (.xlsx or .csv):</label>
+            <input class="form-control" type="file" id="excelFile" accept=".csv, .xlsx">
+            <p class="mt-2 text-danger" id="fileError" style="display:none;">Error: Please ensure your file has the required sheets and headers.</p>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card p-3 shadow-sm">
+                    <h6>Overall Invoices %</h6>
+                    <h3 id="invoicesPercent">--</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 shadow-sm">
+                    <h6>Overall Collections %</h6>
+                    <h3 id="collectionsPercent">--</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 shadow-sm">
+                    <h6>Total Incentive Earned</h6>
+                    <h3 id="incentiveEarned">--</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 shadow-sm">
+                    <h6>Total Payout Eligible</h6>
+                    <h3 id="payoutEligible">--</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-4 shadow-sm mb-4">
+            <h4 class="mb-3">Monthly Achievements</h4>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Target</th>
+                        <th>Achieved</th>
+                        <th>% Achievement</th>
+                        <th>Incentive</th>
+                    </tr>
+                </thead>
+                <tbody id="monthlyAchievementsBody">
+                    </tbody>
+            </table>
+        </div>
+
+        <div class="card p-4 shadow-sm">
+            <h4 class="mb-3">Team Performance (Manager View)</h4>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Employee Name</th>
+                        <th>Invoices %</th>
+                        <th>Collections %</th>
+                        <th>Incentive</th>
+                    </tr>
+                </thead>
+                <tbody id="teamPerformanceBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Currency formatting function for Indian Rupee (₹)
+    const formatCurrency = (amount) => `₹${Number(amount).toLocaleString('en-IN')}`;
+
+    // Event listener for file selection
+    document.getElementById('excelFile').addEventListener('change', handleFile, false);
+
+    // Global variables to hold parsed data
+    let monthlyData = [];
+    let teamData = [];
+
+    /**
+     * Groups data by Employee Name, aggregating incentive and averaging percentages.
+     */
+    function groupTeamData(data) {
+        const aggregatedData = {};
+
+        data.forEach(item => {
+            const name = item['Employee Name'];
+            
+            // Only process rows that have an Employee Name
+            if (!name) return; 
+
+            if (!aggregatedData[name]) {
+                aggregatedData[name] = {
+                    'Employee Name': name,
+                    totalIncentive: 0,
+                    totalInvoicesPercent: 0,
+                    totalCollectionsPercent: 0,
+                    monthCount: 0 
+                };
+            }
+
+            // Aggregate values
+            aggregatedData[name].totalIncentive += (item.Incentive || 0);
+            aggregatedData[name].totalInvoicesPercent += (item['Invoices %'] || 0);
+            aggregatedData[name].totalCollectionsPercent += (item['Collections %'] || 0);
+            aggregatedData[name].monthCount += 1;
+        });
+
+        // Calculate the final averages
+        return Object.values(aggregatedData).map(employee => ({
+            'Employee Name': employee['Employee Name'],
+            // Calculate the average and round to the nearest whole number
+            'Invoices %': (employee.totalInvoicesPercent / employee.monthCount).toFixed(0),
+            'Collections %': (employee.totalCollectionsPercent / employee.monthCount).toFixed(0),
+            'Incentive': employee.totalIncentive // This is the total incentive earned
+        }));
+    }
+
+    function handleFile(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                const sheetName = workbook.SheetNames[0]; 
+                const monthlySheet = workbook.Sheets[sheetName];
+                
+                // 1. Raw data for Monthly Achievements Table
+                monthlyData = XLSX.utils.sheet_to_json(monthlySheet); 
+
+                // 2. Aggregated data for Team Performance Table
+                teamData = groupTeamData(monthlyData);
+
+                document.getElementById('fileError').style.display = 'none';
+
+                updateDashboard(monthlyData, teamData);
+                
+            } catch (error) {
+                console.error("Error processing file:", error);
+                document.getElementById('fileError').style.display = 'block';
+                // Clear the dashboard if file processing fails
+                updateDashboard([], []);
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // Main function to update the dashboard with parsed data
+    function updateDashboard(monthlyAchievements, teamPerformance) {
+        
+        // --- A. Calculate & Update Summary Cards ---
+        const totalTarget = monthlyAchievements.reduce((sum, item) => sum + (item.Target || 0), 0);
+        const totalAchieved = monthlyAchievements.reduce((sum, item) => sum + (item.Achieved || 0), 0);
+        
+        // Sum total incentives from the AGGREGATED team data
+        const totalIncentive = teamPerformance.reduce((sum, item) => sum + (item.Incentive || 0), 0);
+        
+        const overallInvoicesPercent = totalTarget > 0 ? ((totalAchieved / totalTarget) * 100).toFixed(0) : 0;
+        
+        // Calculate the average of all aggregated collections percentages
+        const avgCollectionsPercent = teamPerformance.reduce((sum, item) => sum + Number(item['Collections %']), 0) / teamPerformance.length;
+
+        document.getElementById('invoicesPercent').textContent = `${overallInvoicesPercent}%`;
+        document.getElementById('collectionsPercent').textContent = `${avgCollectionsPercent ? avgCollectionsPercent.toFixed(0) : 0}%`;
+        document.getElementById('incentiveEarned').textContent = formatCurrency(totalIncentive);
+        document.getElementById('payoutEligible').textContent = formatCurrency(totalIncentive * 1.5);
+
+        // --- B. Populate Monthly Achievements Table (Raw Data) ---
+        const monthlyBody = document.getElementById('monthlyAchievementsBody');
+        monthlyBody.innerHTML = ''; 
+
+        monthlyAchievements.forEach(item => {
+            if (!item.Month) return; 
+            const achievementPercentage = ((item.Achieved / item.Target) * 100).toFixed(0) + '%';
+            
+            const row = monthlyBody.insertRow();
+            row.insertCell().textContent = item.Month;
+            row.insertCell().textContent = formatCurrency(item.Target);
+            row.insertCell().textContent = formatCurrency(item.Achieved);
+            row.insertCell().textContent = achievementPercentage;
+            row.insertCell().textContent = formatCurrency(item.Incentive);
+        });
+
+        // --- C. Populate Team Performance Table (Aggregated Data) ---
+        const teamBody = document.getElementById('teamPerformanceBody');
+        teamBody.innerHTML = ''; 
+
+        teamPerformance.forEach(item => {
+            const row = teamBody.insertRow();
+            row.insertCell().textContent = item['Employee Name'];
+            row.insertCell().textContent = `${item['Invoices %']}%`;
+            row.insertCell().textContent = `${item['Collections %']}%`;
+            row.insertCell().textContent = formatCurrency(item.Incentive);
+        });
+    }
+
+    // Initialize with default empty state
+    updateDashboard([], []);
+
+</script>
+</body>
+</html>
