@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Incentive Tracker Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        /* ... (Your CSS styles with the corrections/enhancements) ... */
+        body { background: #3B302E; }
+        h2 { color: antiquewhite; }
+        .sidebar { height: auto; background-color: #9E8D8D; padding: 20px; color: antiquewhite; }
+        .sidebar a { color: antiquewhite; text-decoration: none; display: block; margin: 15px 0; transition: background-color 0.3s; padding: 5px 10px; border-radius: 5px; }
+        .sidebar a:hover { background-color: #7d6b6b; color: #ffffff; }
+        .card { border-radius: 15px; color: antiquewhite; background-color: #9E8D8D; }
+        .table th { background:#3B302E ; color: antiquewhite; }
+        .table td { background-color: #9E8D8D; color: antiquewhite; } /* Fixed typo */
+        .file-upload-section {
+            background-color: #9E8D8D; 
+            padding: 20px; 
+            border-radius: 15px;
+            margin-bottom: 20px;
+        }
+        .file-upload-section label, .file-upload-section h4 {
+            color: #3B302E;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="d-flex">
+
+    <div class="sidebar">
+        <h3>Incentive Tracker</h3>
+        <a href="#">Dashboard</a>
+        <a href="#">My Achievements</a>
+        <a href="#">Incentives</a>
+        <a href="#">Team Performance</a>
+        <a href="#">Logout</a>
+    </div>
+
+    <div class="container-fluid p-4">
+
+        <h2 class="mb-4">WELCOME TO GRUHA, USERS</h2>
+
+        <div class="file-upload-section">
+            <h4 class="mb-3">Upload Data File</h4>
+            <label for="excelFile" class="form-label">Select Excel File (.xlsx or .csv):</label>
+            <input class="form-control" type="file" id="excelFile" accept=".csv, .xlsx">
+            <p class="mt-2 text-danger" id="fileError" style="display:none;">Error: Please ensure your file has the required sheets and headers.</p>
+        </div>
+        
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card p-3 shadow-sm">
+                    <h6>Overall Invoices %</h6>
+                    <h3 id="invoicesPercent">--</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 shadow-sm">
+                    <h6>Overall Collections %</h6>
+                    <h3 id="collectionsPercent">--</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 shadow-sm">
+                    <h6>Total Incentive Earned</h6>
+                    <h3 id="incentiveEarned">--</h3>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card p-3 shadow-sm">
+                    <h6>Total Payout Eligible</h6>
+                    <h3 id="payoutEligible">--</h3>
+                </div>
+            </div>
+        </div>
+
+        <div class="card p-4 shadow-sm mb-4">
+            <h4 class="mb-3">Monthly Achievements</h4>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Target</th>
+                        <th>Achieved</th>
+                        <th>% Achievement</th>
+                        <th>Incentive</th>
+                    </tr>
+                </thead>
+                <tbody id="monthlyAchievementsBody">
+                    </tbody>
+            </table>
+        </div>
+
+        <div class="card p-4 shadow-sm">
+            <h4 class="mb-3">Team Performance (Manager View)</h4>
+            <table class="table table-bordered">
+                <thead>
+                    <tr>
+                        <th>Employee Name</th>
+                        <th>Invoices %</th>
+                        <th>Collections %</th>
+                        <th>Incentive</th>
+                    </tr>
+                </thead>
+                <tbody id="teamPerformanceBody">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 2. Event listener for file selection
+    document.getElementById('excelFile').addEventListener('change', handleFile, false);
+
+    // Global variables to hold parsed data
+    let monthlyData = [];
+    let teamData = [];
+
+    function handleFile(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            try {
+                const data = new Uint8Array(e.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                
+                // Assuming the monthly achievement data is in the first sheet (Sheet1)
+                const monthlySheetName = workbook.SheetNames[0]; 
+                const monthlySheet = workbook.Sheets[monthlySheetName];
+                // Convert to JSON array: [{Month: 'January', Target: 100000, ...}, ...]
+                monthlyData = XLSX.utils.sheet_to_json(monthlySheet); 
+
+                // Assuming the team performance data is also in the first sheet for simplicity, 
+                // but we will filter the columns needed for the second table logic.
+                teamData = monthlyData.filter(item => item['Employee Name']); // Filter for employee data if mixed
+
+                // If you had separate sheets, you would do:
+                /* const teamSheetName = workbook.SheetNames[1]; // Or the second sheet
+                const teamSheet = workbook.Sheets[teamSheetName];
+                teamData = XLSX.utils.sheet_to_json(teamSheet);
+                */
+
+                document.getElementById('fileError').style.display = 'none';
+
+                updateDashboard(monthlyData, teamData);
+                
+            } catch (error) {
+                console.error("Error processing file:", error);
+                document.getElementById('fileError').style.display = 'block';
+                // Clear the dashboard if file processing fails
+                document.getElementById('invoicesPercent').textContent = '--';
+                document.getElementById('monthlyAchievementsBody').innerHTML = '';
+                document.getElementById('teamPerformanceBody').innerHTML = '';
+            }
+        };
+        reader.readAsArrayBuffer(file);
+    }
+
+    // 3. Main function to update the dashboard with parsed data
+    function updateDashboard(monthlyAchievements, teamPerformance) {
+        
+        // --- A. Calculate & Update Summary Cards ---
+        
+        // Sum targets and achieved amounts from the monthly data
+        const totalTarget = monthlyAchievements.reduce((sum, item) => sum + (item.Target || 0), 0);
+        const totalAchieved = monthlyAchievements.reduce((sum, item) => sum + (item.Achieved || 0), 0);
+        
+        // Sum total incentives from team data
+        const totalIncentive = teamPerformance.reduce((sum, item) => sum + (item.Incentive || 0), 0);
+        
+        const overallInvoicesPercent = totalTarget > 0 ? ((totalAchieved / totalTarget) * 100).toFixed(0) : 0;
+        
+        // Collections logic is harder to simulate without specific columns, 
+        // so we'll average the team's collections percentage for a placeholder.
+        const avgCollectionsPercent = teamPerformance.reduce((sum, item) => sum + (item['Collections %'] || 0), 0) / teamPerformance.length;
+
+        document.getElementById('invoicesPercent').textContent = `${overallInvoicesPercent}%`;
+        document.getElementById('collectionsPercent').textContent = `${avgCollectionsPercent ? avgCollectionsPercent.toFixed(0) : 0}%`;
+        document.getElementById('incentiveEarned').textContent = `₹${totalIncentive.toLocaleString('en-IN')}`;
+        document.getElementById('payoutEligible').textContent = `₹${(totalIncentive * 1.5).toLocaleString('en-IN')}`; // Example placeholder calculation
+
+        // --- B. Populate Monthly Achievements Table ---
+        const monthlyBody = document.getElementById('monthlyAchievementsBody');
+        monthlyBody.innerHTML = ''; // Clear existing rows
+
+        monthlyAchievements.forEach(item => {
+            if (!item.Month) return; // Skip empty rows
+
+            const achievementPercentage = ((item.Achieved / item.Target) * 100).toFixed(0) + '%';
+            
+            const row = monthlyBody.insertRow();
+            row.insertCell().textContent = item.Month;
+            row.insertCell().textContent = `₹${item.Target.toLocaleString('en-IN')}`;
+            row.insertCell().textContent = `₹${item.Achieved.toLocaleString('en-IN')}`;
+            row.insertCell().textContent = achievementPercentage;
+            row.insertCell().textContent = `₹${item.Incentive.toLocaleString('en-IN')}`;
+        });
+
+        // --- C. Populate Team Performance Table ---
+        const teamBody = document.getElementById('teamPerformanceBody');
+        teamBody.innerHTML = ''; // Clear existing rows
+
+        teamPerformance.forEach(item => {
+            if (!item['Employee Name']) return; // Skip rows without an employee name
+
+            const row = teamBody.insertRow();
+            row.insertCell().textContent = item['Employee Name'];
+            row.insertCell().textContent = `${item['Invoices %']}%`;
+            row.insertCell().textContent = `${item['Collections %']}%`;
+            row.insertCell().textContent = `₹${item.Incentive.toLocaleString('en-IN')}`;
+        });
+    }
+
+    // Initialize with default empty state
+    updateDashboard([], []);
+
+</script>
+</body>
+</html>
